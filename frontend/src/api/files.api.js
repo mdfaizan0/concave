@@ -23,6 +23,34 @@ export async function fetchFiles(folder_id = null) {
 
 export async function fetchOneFile(file_id) {
     const { data } = await apiClient.get(`/files/${file_id}`)
-    if (!data.success) throw new Error(data.message || "Failed to fetch files")
+    if (!data.success) throw new Error(data.message || "Failed to fetch file")
+    return data.url // Backend returns { success: true, url: signedUrl }
+}
+
+export async function renameFile(id, name, folderId) {
+    const payload = {}
+    if (name) payload.name = name
+    if (folderId !== undefined) payload.folder_id = folderId
+
+    const { data } = await apiClient.patch(`/files/${id}`, payload)
+    if (!data.success) throw new Error(data.message || "Failed to update file")
     return data.file
+}
+
+export async function trashFile(id) {
+    const { data } = await apiClient.delete(`/files/trash/${id}`)
+    if (!data.success) throw new Error(data.message || "Failed to trash file")
+    return null
+}
+
+export async function fetchRecent() {
+    const { data } = await apiClient.get("/recent")
+    if (!data.success) throw new Error(data.message || "Failed to fetch recent files")
+    return data.files
+}
+
+export async function fetchTrash() {
+    const { data } = await apiClient.get("/folders/trash")
+    if (!data.success) throw new Error(data.message || "Failed to fetch trash")
+    return data // Returns { files, folders }
 }

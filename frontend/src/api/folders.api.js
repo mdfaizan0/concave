@@ -18,9 +18,13 @@ export async function fetchFolderById(id) {
     return data
 }
 
-export async function renameFolder(id, name) {
-    const { data } = await apiClient.patch(`/folders/${id}`, { name })
-    if (!data.success) throw new Error(data.message || "Failed to rename folder");
+export async function renameFolder(id, name, parentId) {
+    const payload = {}
+    if (name) payload.name = name
+    if (parentId !== undefined) payload.parent_id = parentId
+
+    const { data } = await apiClient.patch(`/folders/${id}`, payload)
+    if (!data.success) throw new Error(data.message || "Failed to update folder");
     return data.folder
 }
 

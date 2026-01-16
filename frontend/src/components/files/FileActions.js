@@ -29,29 +29,45 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { MoreVertical, Pencil, Trash2, FolderInput } from "lucide-react"
-import { renameFolder, trashFolder } from "@/api/folders.api"
+import { MoreVertical, Pencil, Trash2, Download, FolderInput } from "lucide-react"
+import { renameFile, trashFile, fetchOneFile } from "@/api/files.api"
 import { toast } from "sonner"
-import { MoveSelectorDialog } from "../files/MoveSelectorDialog"
+import { MoveSelectorDialog } from "./MoveSelectorDialog"
 
-export function FolderActions({ folder, onActionComplete }) {
+export function FileActions({ file, onActionComplete }) {
     const [renameOpen, setRenameOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
-    const [newName, setNewName] = useState(folder.name)
+    const [newName, setNewName] = useState(file.name)
     const [loading, setLoading] = useState(false)
+
+    const handleDownload = async (e) => {
+        if (e) e.stopPropagation();
+        try {
+            const url = await fetchOneFile(file.id);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", file.name);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success("Download started");
+        } catch (error) {
+            toast.error(error.message || "Download failed");
+        }
+    }
 
     const handleRename = async (e) => {
         e.preventDefault()
-        if (!newName.trim() || newName === folder.name) {
+        if (!newName.trim() || newName === file.name) {
             setRenameOpen(false)
             return
         }
 
         setLoading(true)
         try {
-            await renameFolder(folder.id, newName.trim())
-            toast.success("Folder renamed")
+            await renameFile(file.id, newName.trim())
+            toast.success("File renamed")
             setRenameOpen(false)
             onActionComplete()
         } catch (error) {
@@ -61,11 +77,11 @@ export function FolderActions({ folder, onActionComplete }) {
         }
     }
 
-    const handleMove = async (newParentId) => {
+    const handleMove = async (newFolderId) => {
         setLoading(true)
         try {
-            await renameFolder(folder.id, null, newParentId)
-            toast.success("Folder moved")
+            await renameFile(file.id, null, newFolderId)
+            toast.success("File moved")
             onActionComplete()
         } catch (error) {
             toast.error(error.message || "Failed to move")
@@ -77,8 +93,8 @@ export function FolderActions({ folder, onActionComplete }) {
     const handleDelete = async () => {
         setLoading(true)
         try {
-            await trashFolder(folder.id)
-            toast.success("Folder moved to trash")
+            await trashFile(file.id)
+            toast.success("File moved to trash")
             setDeleteOpen(false)
             onActionComplete()
         } catch (error) {
@@ -101,6 +117,11 @@ export function FolderActions({ folder, onActionComplete }) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={handleDownload} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Download
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onClick={(e) => {
                             e.stopPropagation();
@@ -139,9 +160,9 @@ export function FolderActions({ folder, onActionComplete }) {
                 open={moveOpen}
                 onOpenChange={setMoveOpen}
                 onMove={handleMove}
-                currentParentId={folder.parent_id}
-                itemType="folder"
-                itemId={folder.id}
+                currentParentId={file.folder_id}
+                itemType="file"
+                itemId={file.id}
             />
 
             {/* Rename Dialog */}
@@ -149,9 +170,9 @@ export function FolderActions({ folder, onActionComplete }) {
                 <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
                     <form onSubmit={handleRename}>
                         <DialogHeader>
-                            <DialogTitle>Rename Folder</DialogTitle>
+                            <DialogTitle>Rename File</DialogTitle>
                             <DialogDescription>
-                                Enter a new name for this folder.
+                                Enter a new name for this file.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -164,7 +185,6 @@ export function FolderActions({ folder, onActionComplete }) {
                                     autoFocus
                                     required
                                     minLength={3}
-                                    maxLength={60}
                                 />
                             </div>
                         </div>
@@ -186,7 +206,7 @@ export function FolderActions({ folder, onActionComplete }) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will move "{folder.name}" and all its contents to the trash.
+                            This will move "{file.name}" to the trash.
                             You can restore it later from the Trash folder.
                         </AlertDialogDescription>
                     </AlertDialogHeader>

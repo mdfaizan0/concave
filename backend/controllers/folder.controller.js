@@ -3,7 +3,6 @@ import { supabase } from "../lib/supabase.js"
 import { resolveAccess } from "../utils/permissions.js";
 
 
-
 export async function getFolderById(req, res) {
     const { id } = req.params;
     try {
@@ -135,9 +134,12 @@ export async function getAllFolders(req, res) {
 
 export async function renameFolder(req, res) {
     const { id } = req.params
-    const { name } = req.body
-    if (!name || name.trim().length < 3) {
-        return res.status(400).json({ success: false, message: "Invalid folder name" })
+    const { name, parent_id } = req.body
+    if (!name && parent_id === undefined) {
+        return res.status(400).json({ success: false, message: "Nothing to update" })
+    }
+    if (parent_id === id) {
+        return res.status(400).json({ success: false, message: "Cannot move folder into itself" })
     }
     try {
         const access = await resolveAccess({
@@ -151,9 +153,13 @@ export async function renameFolder(req, res) {
             return res.status(403).json({ success: false });
         }
 
+        const updateData = {};
+        if (name) updateData.name = name.trim();
+        if (parent_id !== undefined) updateData.parent_id = parent_id;
+
         const { data, error } = await supabase
             .from("folders")
-            .update({ name: name.trim() })
+            .update(updateData)
             .eq("owner_id", req.user.id)
             .eq("id", id)
             .eq("is_deleted", false)

@@ -156,9 +156,9 @@ export async function getOneFile(req, res) {
 
 export async function renameFile(req, res) {
     const { id } = req.params
-    const { name } = req.body
-    if (!name || name.trim().length < 3) {
-        return res.status(400).json({ success: false, message: "Invalid file name" })
+    const { name, folder_id } = req.body
+    if (!name && folder_id === undefined) {
+        return res.status(400).json({ success: false, message: "Nothing to update" })
     }
     try {
         const access = await resolveAccess({
@@ -172,16 +172,20 @@ export async function renameFile(req, res) {
             return res.status(403).json({ success: false });
         }
 
+        const updateData = {};
+        if (name) updateData.name = name.trim();
+        if (folder_id !== undefined) updateData.folder_id = folder_id;
+
         const { data, error } = await supabase
             .from("files")
-            .update({ name: name.trim() })
+            .update(updateData)
             .eq("owner_id", req.user.id)
             .eq("id", id)
             .eq("is_deleted", false)
             .select()
             .single()
 
-        if (error || data) {
+        if (error || !data) {
             return res.status(404).json({
                 success: false,
                 message: "File not found"
@@ -205,7 +209,7 @@ export async function trashFile(req, res) {
     const { id } = req.params
 
     try {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from("files")
             .update({
                 is_deleted: true,
@@ -250,7 +254,7 @@ export async function restoreFile(req, res) {
         if (!access) {
             return res.status(403).json({ success: false });
         }
-        
+
         const { data, error } = await supabase
             .from("files")
             .update({
