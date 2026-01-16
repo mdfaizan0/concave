@@ -31,9 +31,6 @@ export default function DashboardPage() {
     <div className="p-8 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <Button variant="outline" onClick={signOut}>
-          Sign Out
-        </Button>
       </div>
       <p className="text-muted-foreground">
         Welcome back, <span className="text-foreground font-medium">{user.email}</span>.

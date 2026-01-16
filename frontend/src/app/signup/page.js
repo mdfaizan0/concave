@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import Aurora from "@/components/ui/Aurora"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -38,14 +39,23 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <div className="w-full max-w-md space-y-8">
+    <div className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden bg-background">
+      <div className="absolute inset-0 z-0 hidden dark:block">
+        <Aurora
+          color1="#090a34"
+          color2="#40403f"
+          color3="#685850"
+          blend={0.95}
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black tracking-tighter">Concave</h1>
+          <h1 className="text-4xl font-black tracking-tighter drop-shadow-sm">Concave</h1>
           <p className="text-muted-foreground">Start your secure journey</p>
         </div>
 
-        <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+        <Card className="border-border/50 shadow-2xl bg-card/60 backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Create account</CardTitle>
             <CardDescription>
@@ -60,7 +70,7 @@ export default function SignupPage() {
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  className="bg-background/50"
+                  className="bg-background/40 border-border/40 focus:border-primary/50"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -72,7 +82,7 @@ export default function SignupPage() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className="bg-background/50"
+                  className="bg-background/40 border-border/40 focus:border-primary/50"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -80,7 +90,7 @@ export default function SignupPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4 mt-4">
-              <Button type="submit" className="w-full font-semibold" disabled={loading}>
+              <Button type="submit" className="w-full font-semibold shadow-lg shadow-primary/20" disabled={loading}>
                 {loading ? "Creating account..." : "Sign Up"}
               </Button>
               <div className="text-sm text-center text-muted-foreground">

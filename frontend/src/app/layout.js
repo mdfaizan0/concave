@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/AuthContext";
+import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,9 +34,11 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            <ThemeToggle />
-            <Toaster />
+            <AppShell>
+              {children}
+              <ThemeToggle />
+              <Toaster />
+            </AppShell>
           </AuthProvider>
         </ThemeProvider>
       </body>
