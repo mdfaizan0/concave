@@ -21,6 +21,7 @@ import {
   ContextMenuTrigger,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu"
+import * as permissions from "@/utils/permissions"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [files, setFiles] = useState([])
   const [path, setPath] = useState([])
   const [loading, setLoading] = useState(true)
+  const [currentFolder, setCurrentFolder] = useState(null)
   const [newFolderOpen, setNewFolderOpen] = useState(false)
 
   const { addUploads } = useUpload()
@@ -57,6 +59,7 @@ export default function DashboardPage() {
       if (folderId) {
         // Fetch specific folder, its children folders and path
         const folderData = await fetchFolderById(folderId)
+        setCurrentFolder(folderData.folder)
         setFolders(folderData.children.folders)
         setPath(folderData.path)
 
@@ -65,6 +68,7 @@ export default function DashboardPage() {
         setFiles(filesData)
       } else {
         // Fetch root folders
+        setCurrentFolder(null)
         const rootFolders = await fetchAllFolders(null)
         setFolders(rootFolders)
         setPath([{ id: null, name: "My Drive" }])
@@ -157,7 +161,9 @@ export default function DashboardPage() {
                 <Breadcrumbs path={path} onNavigate={handleBreadcrumbClick} />
               </div>
 
-              <NewFolderDialog parentId={folderId} onFolderCreated={loadData} />
+              {permissions.canCreate(currentFolder, user?.id) && (
+                <NewFolderDialog parentId={folderId} onFolderCreated={loadData} />
+              )}
             </div>
 
             <div className="h-px bg-border/40 w-full" />
@@ -196,21 +202,30 @@ export default function DashboardPage() {
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-64 p-1.5 rounded-2xl shadow-2xl border-border/60 bg-background/95 backdrop-blur-xl">
-          <ContextMenuItem
-            onClick={handleUploadClick}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors font-medium text-sm"
-          >
-            <Upload className="h-4 w-4" />
-            Upload File
-          </ContextMenuItem>
-          <ContextMenuSeparator className="my-1.5 bg-border/40" />
-          <ContextMenuItem
-            onClick={() => setNewFolderOpen(true)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors font-medium text-sm"
-          >
-            <FolderPlus className="h-4 w-4" />
-            New Folder
-          </ContextMenuItem>
+          {permissions.canCreate(currentFolder, user?.id) && (
+            <>
+              <ContextMenuItem
+                onClick={handleUploadClick}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors font-medium text-sm"
+              >
+                <Upload className="h-4 w-4" />
+                Upload File
+              </ContextMenuItem>
+              <ContextMenuSeparator className="my-1.5 bg-border/40" />
+              <ContextMenuItem
+                onClick={() => setNewFolderOpen(true)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors font-medium text-sm"
+              >
+                <FolderPlus className="h-4 w-4" />
+                New Folder
+              </ContextMenuItem>
+            </>
+          )}
+          {!permissions.canCreate(currentFolder, user?.id) && (
+            <div className="px-3 py-2 text-xs text-muted-foreground italic">
+              You don't have permission to upload here
+            </div>
+          )}
         </ContextMenuContent>
       </ContextMenu>
 

@@ -43,6 +43,7 @@ import {
     ContextMenuTrigger,
     ContextMenuSeparator,
 } from "@/components/ui/context-menu"
+import * as permissions from "@/utils/permissions"
 
 export function FolderActions({ folder, onActionComplete, children }) {
     const { user } = useAuth()
@@ -52,8 +53,6 @@ export function FolderActions({ folder, onActionComplete, children }) {
     const [newName, setNewName] = useState(folder.name)
     const [loading, setLoading] = useState(false)
     const [isStarred, setIsStarred] = useState(folder.is_starred || false)
-
-    const canEdit = user?.id === folder.owner_id
 
     const handleStar = async (e) => {
         if (e) e.stopPropagation();
@@ -128,29 +127,39 @@ export function FolderActions({ folder, onActionComplete, children }) {
         const Item = Type === "dropdown" ? DropdownMenuItem : ContextMenuItem
         const Separator = Type === "dropdown" ? DropdownMenuSeparator : ContextMenuSeparator
 
+        const canRename = permissions.canRename(folder, user?.id)
+        const canMove = permissions.canMove(folder, user?.id)
+        const canDelete = permissions.canDelete(folder, user?.id)
+        const canShare = permissions.canShare(folder, user?.id)
+        const canStar = permissions.canStar(folder, user?.id)
+
         return (
             <>
-                {canEdit && (
+                {canRename && (
                     <Item onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }} className="gap-2">
                         <Pencil className="h-4 w-4" />
                         Rename
                     </Item>
                 )}
-                <Item onClick={handleShare} className="gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                </Item>
-                {canEdit && (
+                {canShare && (
+                    <Item onClick={handleShare} className="gap-2">
+                        <Share2 className="h-4 w-4" />
+                        Share
+                    </Item>
+                )}
+                {canMove && (
                     <Item onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="gap-2">
                         <FolderInput className="h-4 w-4" />
                         Move to...
                     </Item>
                 )}
-                <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
-                    <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
-                    <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
-                </Item>
-                {canEdit && (
+                {canStar && (
+                    <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
+                        <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
+                        <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
+                    </Item>
+                )}
+                {canDelete && (
                     <>
                         <Separator />
                         <Item
