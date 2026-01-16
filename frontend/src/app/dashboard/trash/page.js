@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
 import { FileList } from "@/components/files/FileList"
 import { FolderList } from "@/components/folders/FolderList"
 import { fetchTrash } from "@/api/files.api"
@@ -10,11 +11,19 @@ import { Trash2, AlertCircle } from "lucide-react"
 
 export default function TrashPage() {
     const { user, loading: authLoading } = useAuth()
+    const router = useRouter()
     const [items, setItems] = useState({ files: [], folders: [] })
     const [loading, setLoading] = useState(true)
 
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login")
+        }
+    }, [user, authLoading, router])
+
     const loadTrash = useCallback(async () => {
         setLoading(true)
+        setItems({ files: [], folders: [] }) // Clear stale items
         try {
             const data = await fetchTrash()
             setItems(data)

@@ -17,8 +17,14 @@ import { Plus } from "lucide-react"
 import { createFolder } from "@/api/folders.api"
 import { toast } from "sonner"
 
-export function NewFolderDialog({ parentId, onFolderCreated }) {
-    const [open, setOpen] = useState(false)
+export function NewFolderDialog({ parentId, onFolderCreated, open: externalOpen, setOpen: externalSetOpen, showTrigger = true }) {
+    const [internalOpen, setInternalOpen] = useState(false)
+    const open = externalOpen !== undefined ? externalOpen : internalOpen
+    const setOpen = (val) => {
+        if (externalSetOpen) externalSetOpen(val)
+        setInternalOpen(val)
+    }
+
     const [name, setName] = useState("")
     const [loading, setLoading] = useState(false)
 
@@ -42,12 +48,14 @@ export function NewFolderDialog({ parentId, onFolderCreated }) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="font-semibold gap-2 shadow-lg shadow-primary/20">
-                    <Plus className="h-4 w-4" />
-                    New Folder
-                </Button>
-            </DialogTrigger>
+            {showTrigger && (
+                <DialogTrigger asChild>
+                    <Button className="font-semibold gap-2 shadow-lg shadow-primary/20">
+                        <Plus className="h-4 w-4" />
+                        New Folder
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>

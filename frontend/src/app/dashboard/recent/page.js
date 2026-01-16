@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
 import { FileList } from "@/components/files/FileList"
 import { fetchRecent } from "@/api/files.api"
 import { toast } from "sonner"
@@ -9,11 +10,19 @@ import { Clock } from "lucide-react"
 
 export default function RecentPage() {
     const { user, loading: authLoading } = useAuth()
+    const router = useRouter()
     const [files, setFiles] = useState([])
     const [loading, setLoading] = useState(true)
 
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login")
+        }
+    }, [user, authLoading, router])
+
     const loadRecent = useCallback(async () => {
         setLoading(true)
+        setFiles([]) // Clear stale items
         try {
             const data = await fetchRecent()
             setFiles(data)
@@ -29,6 +38,15 @@ export default function RecentPage() {
             loadRecent()
         }
     }, [user, authLoading, loadRecent])
+
+    useEffect(() => {
+        const handleUploadSuccess = () => {
+            loadRecent()
+        }
+
+        window.addEventListener("concave-upload-success", handleUploadSuccess)
+        return () => window.removeEventListener("concave-upload-success", handleUploadSuccess)
+    }, [loadRecent])
 
     if (authLoading || (loading && files.length === 0)) {
         return (

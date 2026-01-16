@@ -5,9 +5,19 @@ import { Search, Settings, HelpCircle, Bell, LogOut } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
 
 export function Topbar() {
-    const { signOut } = useAuth()
+    const { session, signOut } = useAuth()
+    const router = useRouter()
+
+    const handleSignOut = async () => {
+        if (session) {
+            await signOut()
+            router.push("/login")
+        } 
+        return
+    }
 
     return (
         <div className="h-16 border-b border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 flex items-center justify-between px-6 sticky top-0 z-40 transition-all duration-300">
@@ -34,7 +44,7 @@ export function Topbar() {
                     variant="ghost"
                     size="icon"
                     className="text-muted-foreground hover:text-red-500 transition-colors"
-                    onClick={signOut}
+                    onClick={handleSignOut}
                     title="Sign Out"
                 >
                     <LogOut className="h-5 w-5" />

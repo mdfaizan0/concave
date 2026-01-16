@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/AuthContext";
+import { UploadProvider } from "@/context/UploadContext";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <meta name="apple-mobile-web-app-title" content="Concave" />
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground transition-colors duration-300`}
       >
         <ThemeProvider
@@ -35,11 +37,13 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <AuthProvider>
-            <AppShell>
-              {children}
-              <ThemeToggle />
-              <Toaster />
-            </AppShell>
+            <UploadProvider>
+              <AppShell>
+                {children}
+                <ThemeToggle />
+                <Toaster />
+              </AppShell>
+            </UploadProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

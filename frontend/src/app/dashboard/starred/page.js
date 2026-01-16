@@ -1,9 +1,19 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
+import { useAuth } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
 import { Star } from "lucide-react"
 
 export default function StarredPage() {
+    const { user, loading: authLoading } = useAuth()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login")
+        }
+    }, [user, authLoading, router])
     return (
         <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
             <div className="flex flex-col space-y-2">

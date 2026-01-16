@@ -40,30 +40,30 @@ export function FileRow({ file, onActionComplete }) {
     }
 
     return (
-        <div
-            onDoubleClick={handleDownload}
-            title="Double click to download"
-            className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm"
-        >
-            <div className="p-2.5 bg-background border border-border/10 rounded-xl group-hover:border-border/40 transition-colors">
-                {getFileIcon(file.mime_type)}
-            </div>
-            <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium truncate group-hover:text-foreground transition-colors">
-                    {file.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground/40">
-                        {file.mime_type?.split("/")[1] || "File"}
-                    </p>
-                    <span className="w-1 h-1 rounded-full bg-border/40" />
-                    <p className="text-[10px] text-muted-foreground/60">
-                        {formatSize(file.size_bytes)}
-                    </p>
+        <FileActions file={file} onActionComplete={onActionComplete}>
+            <div
+                onDoubleClick={handleDownload}
+                title="Double click to download"
+                className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm"
+            >
+                <div className="p-2.5 bg-background border border-border/10 rounded-xl group-hover:border-border/40 transition-colors">
+                    {getFileIcon(file.mime_type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium truncate group-hover:text-foreground transition-colors">
+                        {file.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground/40">
+                            {file.mime_type?.split("/")[1] || "File"}
+                        </p>
+                        <span className="w-1 h-1 rounded-full bg-border/40" />
+                        <p className="text-[10px] text-muted-foreground/60">
+                            {formatSize(file.size_bytes)}
+                        </p>
+                    </div>
                 </div>
             </div>
-
-            <FileActions file={file} onActionComplete={onActionComplete} />
-        </div>
+        </FileActions>
     )
 }

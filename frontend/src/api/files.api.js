@@ -1,6 +1,6 @@
 import apiClient from "./client"
 
-export async function uploadFile({ file, folder_id = null }) {
+export async function uploadFile({ file, folder_id = null, onProgress }) {
     const formData = new FormData()
     formData.append("file", file)
     if (folder_id) formData.append("folder_id", folder_id)
@@ -8,6 +8,12 @@ export async function uploadFile({ file, folder_id = null }) {
     const { data } = await apiClient.post("/files", formData, {
         headers: {
             "Content-Type": "multipart/form-data"
+        },
+        onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            }
         }
     })
 

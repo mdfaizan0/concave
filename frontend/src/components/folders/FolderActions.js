@@ -29,17 +29,53 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { MoreVertical, Pencil, Trash2, FolderInput } from "lucide-react"
+import { MoreVertical, Pencil, Trash2, FolderInput, Share2, Star } from "lucide-react"
 import { renameFolder, trashFolder } from "@/api/folders.api"
+import { starResource, unstarResource } from "@/api/stars.api"
 import { toast } from "sonner"
 import { MoveSelectorDialog } from "../files/MoveSelectorDialog"
+import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+    ContextMenuSeparator,
+} from "@/components/ui/context-menu"
 
-export function FolderActions({ folder, onActionComplete }) {
+export function FolderActions({ folder, onActionComplete, children }) {
+    const { user } = useAuth()
     const [renameOpen, setRenameOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
     const [newName, setNewName] = useState(folder.name)
     const [loading, setLoading] = useState(false)
+    const [isStarred, setIsStarred] = useState(folder.is_starred || false)
+
+    const canEdit = user?.id === folder.owner_id
+
+    const handleStar = async (e) => {
+        if (e) e.stopPropagation();
+        try {
+            if (isStarred) {
+                await unstarResource("folder", folder.id)
+                toast.success(`Unstarred ${folder.name}`)
+            } else {
+                await starResource("folder", folder.id)
+                toast.success(`Starred ${folder.name}`)
+            }
+            setIsStarred(!isStarred)
+            onActionComplete?.()
+        } catch (error) {
+            toast.error(error.message || "Failed to update star")
+        }
+    }
+
+    const handleShare = (e) => {
+        if (e) e.stopPropagation();
+        toast.info("Sharing feature coming soon")
+    }
 
     const handleRename = async (e) => {
         e.preventDefault()
@@ -88,52 +124,84 @@ export function FolderActions({ folder, onActionComplete }) {
         }
     }
 
-    return (
-        <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setMoveOpen(true);
-                        }}
-                        className="gap-2"
-                    >
-                        <FolderInput className="h-4 w-4" />
-                        Move to...
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setRenameOpen(true);
-                        }}
-                        className="gap-2"
-                    >
+    const menuItems = (Type) => {
+        const Item = Type === "dropdown" ? DropdownMenuItem : ContextMenuItem
+        const Separator = Type === "dropdown" ? DropdownMenuSeparator : ContextMenuSeparator
+
+        return (
+            <>
+                {canEdit && (
+                    <Item onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }} className="gap-2">
                         <Pencil className="h-4 w-4" />
                         Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteOpen(true);
-                        }}
-                        className="gap-2 text-destructive focus:text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        Move to Trash
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                    </Item>
+                )}
+                <Item onClick={handleShare} className="gap-2">
+                    <Share2 className="h-4 w-4" />
+                    Share
+                </Item>
+                {canEdit && (
+                    <Item onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="gap-2">
+                        <FolderInput className="h-4 w-4" />
+                        Move to...
+                    </Item>
+                )}
+                <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
+                    <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
+                    <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
+                </Item>
+                {canEdit && (
+                    <>
+                        <Separator />
+                        <Item
+                            onClick={(e) => { e.stopPropagation(); setDeleteOpen(true); }}
+                            className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 font-bold"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Dump into Trash
+                        </Item>
+                    </>
+                )}
+            </>
+        )
+    }
+
+    // Injected dropdown menu button
+    const actionTrigger = (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="ghost"
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-1.5 rounded-2xl shadow-2xl border-border/60 bg-background/95 backdrop-blur-xl">
+                {menuItems("dropdown")}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+
+    // Clone children and inject the trigger at the end of its content
+    const clonedTrigger = React.cloneElement(children, {
+        children: (
+            <>
+                {children.props.children}
+                {actionTrigger}
+            </>
+        )
+    })
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild>
+                {clonedTrigger}
+            </ContextMenuTrigger>
+            <ContextMenuContent className="w-64 p-1.5 rounded-2xl shadow-2xl border-border/60 bg-background/95 backdrop-blur-xl">
+                {menuItems("context")}
+            </ContextMenuContent>
 
             <MoveSelectorDialog
                 open={moveOpen}
@@ -202,6 +270,6 @@ export function FolderActions({ folder, onActionComplete }) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </ContextMenu>
     )
 }

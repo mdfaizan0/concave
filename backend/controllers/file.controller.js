@@ -131,7 +131,10 @@ export async function getOneFile(req, res) {
 
         const { data: signed, error: signError } = await supabase.storage
             .from("drive")
-            .createSignedUrl(file.storage_path, 60)
+            .createSignedUrl(file.storage_path, 60, {
+                download: true,
+                download_filename: file.name
+            })
 
         if (signError) {
             console.error("Signed URL error:", signError)

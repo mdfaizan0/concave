@@ -13,7 +13,7 @@ export function FileList({ files, onRefresh }) {
                 <div className="h-px bg-border/10 flex-1" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {files.map((file) => (
                     <FileRow
                         key={file.id}
