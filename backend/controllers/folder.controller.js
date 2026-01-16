@@ -1,5 +1,83 @@
 import { getAllDescendantFolderIds } from "../lib/getAllDescendantFolderIds.js";
 import { supabase } from "../lib/supabase.js"
+import { resolveAccess } from "../utils/permissions.js";
+
+
+
+export async function getFolderById(req, res) {
+    const { id } = req.params;
+    try {
+        // 1. Get folder details
+        const { data: folder, error: folderError } = await supabase
+            .from("folders")
+            .select("*")
+            .eq("id", id)
+            .eq("is_deleted", false)
+            .single();
+
+        if (folderError || !folder) {
+            return res.status(404).json({ success: false, message: "Folder not found" });
+        }
+
+        // 2. Access check
+        const access = await resolveAccess({
+            userId: req.user.id,
+            resourceType: "folder",
+            resourceId: id
+        });
+
+        if (!access) {
+            return res.status(403).json({ success: false, message: "Forbidden" });
+        }
+
+        // 3. Get children folders
+        const { data: folders, error: childrenError } = await supabase
+            .from("folders")
+            .select("*")
+            .eq("parent_id", id)
+            .eq("is_deleted", false)
+            .order("name", { ascending: true });
+
+        if (childrenError) {
+            console.error("Error getting children folders:", childrenError);
+        }
+
+        // 4. Construct path (breadcrumbs)
+        const path = [];
+        let currentParentId = folder.parent_id;
+        path.push({ id: folder.id, name: folder.name });
+
+        while (currentParentId) {
+            const { data: parent } = await supabase
+                .from("folders")
+                .select("id, name, parent_id")
+                .eq("id", currentParentId)
+                .single();
+
+            if (parent) {
+                path.unshift({ id: parent.id, name: parent.name });
+                currentParentId = parent.parent_id;
+            } else {
+                currentParentId = null;
+            }
+        }
+
+        // Add root to path
+        path.unshift({ id: null, name: "My Drive" });
+
+        return res.status(200).json({
+            success: true,
+            folder,
+            children: {
+                folders: folders || []
+            },
+            path
+        });
+    } catch (error) {
+        console.error("Error fetching folder details:", error.message);
+        return res.status(500).json({ success: false, message: "Error fetching folder details" });
+    }
+}
 
 export async function createFolder(req, res) {
     const { name, parent_id = null } = req.body
@@ -91,7 +169,7 @@ export async function renameFolder(req, res) {
 
         return res.status(200).json({
             success: true,
-            file: data
+            folder: data
         })
     } catch (error) {
         console.error("Unexpected folder rename error:", error)
