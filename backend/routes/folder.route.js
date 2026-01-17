@@ -10,7 +10,7 @@ router.post("/", createFolder)
 router.get("/", getAllFolders)
 router.patch("/:id", renameFolder)
 router.delete("/:id", trashFolder)
-router.delete("/:id", restoreFolder)
+router.patch("/:id/restore", restoreFolder)
 router.get("/trash", listTrash)
 router.get("/:id", getFolderById)
 

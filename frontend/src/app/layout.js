@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/AuthContext";
 import { UploadProvider } from "@/context/UploadContext";
+import { StarredProvider } from "@/context/StarredContext";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
@@ -37,13 +38,15 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <AuthProvider>
-            <UploadProvider>
-              <AppShell>
-                {children}
-                <ThemeToggle />
-                <Toaster />
-              </AppShell>
-            </UploadProvider>
+            <StarredProvider>
+              <UploadProvider>
+                <AppShell>
+                  {children}
+                  <ThemeToggle />
+                  <Toaster />
+                </AppShell>
+              </UploadProvider>
+            </StarredProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

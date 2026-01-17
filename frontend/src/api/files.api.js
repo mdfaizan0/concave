@@ -49,6 +49,12 @@ export async function trashFile(id) {
     return null
 }
 
+export async function restoreFile(id) {
+    const { data } = await apiClient.patch(`/files/trash/${id}`)
+    if (!data.success) throw new Error(data.message || "Failed to restore file")
+    return data.file
+}
+
 export async function fetchRecent() {
     const { data } = await apiClient.get("/recent")
     if (!data.success) throw new Error(data.message || "Failed to fetch recent files")

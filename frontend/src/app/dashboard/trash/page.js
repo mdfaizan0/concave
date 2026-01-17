@@ -1,109 +1,98 @@
 "use client"
 
-import React, { useEffect, useState, useCallback } from "react"
-import { useAuth } from "@/context/AuthContext"
-import { useRouter } from "next/navigation"
-import { FileList } from "@/components/files/FileList"
-import { FolderList } from "@/components/folders/FolderList"
+import React, { useEffect, useState } from "react"
 import { fetchTrash } from "@/api/files.api"
+import { FolderList } from "@/components/folders/FolderList"
+import { FileList } from "@/components/files/FileList"
+import { Trash2, Loader2, LayoutGrid } from "lucide-react"
 import { toast } from "sonner"
-import { Trash2, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function TrashPage() {
-    const { user, loading: authLoading } = useAuth()
-    const router = useRouter()
-    const [items, setItems] = useState({ files: [], folders: [] })
     const [loading, setLoading] = useState(true)
+    const [items, setItems] = useState({ files: [], folders: [] })
+    const router = useRouter()
 
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push("/login")
-        }
-    }, [user, authLoading, router])
-
-    const loadTrash = useCallback(async () => {
+    const loadTrash = async () => {
         setLoading(true)
         try {
             const data = await fetchTrash()
             setItems(data)
         } catch (error) {
-            toast.error(error.response?.data?.message || error.message || "Failed to load trash")
+            console.error("Failed to load trash items", error)
+            toast.error("Failed to load trash items")
         } finally {
             setLoading(false)
         }
-    }, [])
+    }
 
     useEffect(() => {
-        if (!authLoading && user) {
-            loadTrash()
-        }
-    }, [user?.id, authLoading, loadTrash])
+        loadTrash()
+    }, [])
 
-    const isEmpty = items.files.length === 0 && items.folders.length === 0
-
-    if (authLoading || (loading && isEmpty)) {
+    if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <p className="text-muted-foreground animate-pulse">Emptying the bin...</p>
+            <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    if (items.files.length === 0 && items.folders.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground gap-4">
+                <div className="bg-primary/10 p-6 rounded-full">
+                    <Trash2 className="w-10 h-10 text-primary" />
+                </div>
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">Trash is empty</h3>
+                    <p className="text-sm opacity-70">Items moved to trash will appear here.</p>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
-            <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-                    <Trash2 className="h-8 w-8 text-destructive" />
-                    Trash
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Items in trash will be automatically deleted after 30 days (coming soon).
-                </p>
-            </div>
-
-            <div className="p-4 bg-destructive/5 border border-destructive/10 rounded-2xl flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                    <p className="text-sm font-semibold text-destructive">Trash Management</p>
-                    <p className="text-xs text-destructive/80 leading-relaxed">
-                        Permanent deletion and restoration are currently disabled.
-                        Items shown here are safely stored in the bin.
-                    </p>
+        <div className="p-6 space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                    <Trash2 className="w-5 h-5 text-primary fill-primary" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Trash</h1>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Deleted Items</p>
                 </div>
             </div>
 
-            <div className="h-px bg-border/40 w-full" />
-
-            {isEmpty ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border/10 rounded-3xl bg-muted/20">
-                    <div className="p-5 bg-background border border-border/40 rounded-3xl mb-4 shadow-sm">
-                        <Trash2 className="w-10 h-10 text-muted-foreground/40" />
+            {items.folders.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground border-b border-border/40 pb-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        FOLDERS
                     </div>
-                    <h3 className="text-xl font-bold tracking-tight">Trash is empty</h3>
-                    <p className="text-sm text-muted-foreground/60 max-w-[200px]">Any items you delete will appear here.</p>
+                    <FolderList
+                        folders={items.folders}
+                        onFolderClick={(folder) => {
+                            // Can't navigate into deleted folder usually.
+                            // Maybe disable click or show toast?
+                            // For now, let's just do nothing or toast.
+                            toast.error("Restore folder to view contents")
+                        }}
+                        onRefresh={loadTrash}
+                    />
                 </div>
-            ) : (
-                <div className="space-y-10">
-                    {items.folders.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 px-1">
-                                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">Folders</h2>
-                                <div className="h-px bg-border/10 flex-1" />
-                            </div>
-                            <FolderList folders={items.folders} onRefresh={loadTrash} onFolderClick={() => { }} />
-                        </div>
-                    )}
+            )}
 
-                    {items.files.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 px-1">
-                                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">Files</h2>
-                                <div className="h-px bg-border/10 flex-1" />
-                            </div>
-                            <FileList files={items.files} onRefresh={loadTrash} />
-                        </div>
-                    )}
+            {items.files.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground border-b border-border/40 pb-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        FILES
+                    </div>
+                    <FileList
+                        files={items.files}
+                        onRefresh={loadTrash}
+                    />
                 </div>
             )}
         </div>

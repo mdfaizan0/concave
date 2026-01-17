@@ -33,3 +33,9 @@ export async function trashFolder(id) {
     if (!data.success) throw new Error(data.message || "Failed to trash folder");
     return null
 }
+
+export async function restoreFolder(id) {
+    const { data } = await apiClient.patch(`/folders/${id}/restore`)
+    if (!data.success) throw new Error(data.message || "Failed to restore folder");
+    return data.folder
+}

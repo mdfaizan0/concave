@@ -1,6 +1,9 @@
+import { supabase } from "../lib/supabase.js"
+
 export async function search(req, res) {
     const { q = "", type, sort = "created_at", order = "desc" } = req.query
     const userId = req.user.id
+    console.log("q", q)
 
     try {
         let files = []

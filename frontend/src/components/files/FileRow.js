@@ -1,10 +1,11 @@
 "use client"
 
 import React from "react"
-import { File, FileText, FileImage, FileVideo, FileArchive, Music } from "lucide-react"
+import { File, FileText, FileImage, FileVideo, FileArchive, Music, Star } from "lucide-react"
 import { FileActions } from "./FileActions"
 import { fetchOneFile } from "@/api/files.api"
 import { toast } from "sonner"
+import { useStarred } from "@/context/StarredContext"
 
 const getFileIcon = (mime) => {
     if (mime?.startsWith("image/")) return <FileImage className="h-6 w-6 text-blue-500 fill-blue-500/10" />
@@ -24,6 +25,9 @@ const formatSize = (bytes) => {
 }
 
 export function FileRow({ file, onActionComplete }) {
+    const { isStarred } = useStarred()
+    const starred = isStarred("file", file.id)
+
     const handleDownload = async () => {
         try {
             const url = await fetchOneFile(file.id);
@@ -44,10 +48,15 @@ export function FileRow({ file, onActionComplete }) {
             <div
                 onDoubleClick={handleDownload}
                 title="Double click to download"
-                className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm"
+                className="group relative flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm"
             >
-                <div className="p-2.5 bg-background border border-border/10 rounded-xl group-hover:border-border/40 transition-colors">
+                <div className="relative p-2.5 bg-background border border-border/10 rounded-xl group-hover:border-border/40 transition-colors">
                     {getFileIcon(file.mime_type)}
+                    {starred && (
+                        <div className="absolute -bottom-1 -right-1 p-0.5 bg-background shadow-sm rounded-full border border-border/10 z-10">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        </div>
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium truncate group-hover:text-foreground transition-colors">

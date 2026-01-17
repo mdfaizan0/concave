@@ -29,8 +29,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { MoreVertical, Pencil, Trash2, Download, FolderInput, Share2, Star, UserMinus } from "lucide-react"
-import { renameFile, trashFile, fetchOneFile } from "@/api/files.api"
+import { MoreVertical, Pencil, Trash2, Download, FolderInput, Share2, Star, UserMinus, RotateCcw } from "lucide-react"
+import { renameFile, trashFile, fetchOneFile, restoreFile } from "@/api/files.api"
 import { starResource, unstarResource } from "@/api/stars.api"
 import { leaveShare } from "@/api/shares.api"
 import { toast } from "sonner"
@@ -38,6 +38,7 @@ import { MoveSelectorDialog } from "./MoveSelectorDialog"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 import { ShareDialog } from "../share/ShareDialog"
+import { useStarred } from "@/context/StarredContext"
 import {
     ContextMenu,
     ContextMenuContent,
@@ -57,19 +58,13 @@ export function FileActions({ file, onActionComplete, children }) {
     const [leaveShareOpen, setLeaveShareOpen] = useState(false)
     const [newName, setNewName] = useState(file.name)
     const [loading, setLoading] = useState(false)
-    const [isStarred, setIsStarred] = useState(file.is_starred || false)
+    const { isStarred, toggleStar } = useStarred()
+    const starred = isStarred("file", file.id)
 
     const handleStar = async (e) => {
         if (e) e.stopPropagation();
         try {
-            if (isStarred) {
-                await unstarResource("file", file.id)
-                toast.success(`Unstarred ${file.name}`)
-            } else {
-                await starResource("file", file.id)
-                toast.success(`Starred ${file.name}`)
-            }
-            setIsStarred(!isStarred)
+            await toggleStar("file", file.id)
             onActionComplete?.()
         } catch (error) {
             toast.error(error.response?.data?.message || error.message || "Failed to update star")
@@ -155,6 +150,20 @@ export function FileActions({ file, onActionComplete, children }) {
         }
     }
 
+    const handleRestore = async (e) => {
+        if (e) e.stopPropagation();
+        setLoading(true)
+        try {
+            await restoreFile(file.id)
+            toast.success("File restored")
+            onActionComplete()
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || "Failed to restore")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const menuItems = (Type) => {
         const Item = Type === "dropdown" ? DropdownMenuItem : ContextMenuItem
         const Separator = Type === "dropdown" ? DropdownMenuSeparator : ContextMenuSeparator
@@ -177,6 +186,12 @@ export function FileActions({ file, onActionComplete, children }) {
                         Download
                     </Item>
                 )}
+                {file.is_deleted && (
+                    <Item onClick={handleRestore} className="gap-2">
+                        <RotateCcw className="h-4 w-4" />
+                        Restore
+                    </Item>
+                )}
                 {canRename && (
                     <Item onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }} className="gap-2">
                         <Pencil className="h-4 w-4" />
@@ -192,8 +207,8 @@ export function FileActions({ file, onActionComplete, children }) {
                 )}
                 {canStar && (
                     <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
-                        <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
-                        <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
+                        <Star className={cn("h-4 w-4 transition-transform active:scale-95", starred && "fill-primary")} />
+                        <span className="flex-1 font-semibold">{starred ? "Unstar" : "Star"}</span>
                     </Item>
                 )}
                 {/* Remove from Shared Action */}
@@ -212,7 +227,7 @@ export function FileActions({ file, onActionComplete, children }) {
                         Move to...
                     </Item>
                 )}
-                {canDelete && (
+                {canDelete && !file.is_deleted && (
                     <>
                         <Separator />
                         <Item

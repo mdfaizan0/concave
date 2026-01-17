@@ -1,40 +1,109 @@
 "use client"
 
-import React, { useEffect } from "react"
-import { useAuth } from "@/context/AuthContext"
+import React, { useEffect, useState } from "react"
+import { fetchStarred } from "@/api/stars.api"
+import { searchResources } from "@/api/search.api"
+import { FolderList } from "@/components/folders/FolderList"
+import { FileList } from "@/components/files/FileList"
+import { Star, Loader2, LayoutGrid } from "lucide-react"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { Star } from "lucide-react"
 
 export default function StarredPage() {
-    const { user, loading: authLoading } = useAuth()
+    const [loading, setLoading] = useState(true)
+    const [items, setItems] = useState({ files: [], folders: [] })
     const router = useRouter()
 
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push("/login")
+    const loadStarred = async () => {
+        setLoading(true)
+        try {
+            const [starredData, allResources] = await Promise.all([
+                fetchStarred(),
+                searchResources("") // Fetch all resources to hydrate metadata
+            ])
+
+            const starredFileIds = new Set(starredData.filter(i => i.resource_type === "file").map(i => i.resource_id))
+            const starredFolderIds = new Set(starredData.filter(i => i.resource_type === "folder").map(i => i.resource_id))
+
+            const starredFiles = allResources.files.filter(f => starredFileIds.has(f.id)).map(f => ({ ...f, is_starred: true }))
+            const starredFolders = allResources.folders.filter(f => starredFolderIds.has(f.id)).map(f => ({ ...f, is_starred: true }))
+
+            setItems({
+                files: starredFiles,
+                folders: starredFolders
+            })
+        } catch (error) {
+            console.error("Failed to load starred items", error)
+            toast.error("Failed to load starred items")
+        } finally {
+            setLoading(false)
         }
-    }, [user, authLoading, router])
-    return (
-        <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
-            <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-                    <Star className="h-8 w-8 text-yellow-500 fill-yellow-500/20" />
-                    Starred
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Files you've marked as important will appear here.
-                </p>
+    }
+
+    useEffect(() => {
+        loadStarred()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+        )
+    }
 
-            <div className="h-px bg-border/40 w-full" />
-
-            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border/10 rounded-3xl bg-muted/20">
-                <div className="p-5 bg-background border border-border/40 rounded-3xl mb-4 shadow-sm">
-                    <Star className="w-10 h-10 text-muted-foreground/40" />
+    if (items.files.length === 0 && items.folders.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground gap-4">
+                <div className="bg-primary/10 p-6 rounded-full">
+                    <Star className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight">Starred is experimental</h3>
-                <p className="text-sm text-muted-foreground/60 max-w-[200px]">This feature is coming in a later phase.</p>
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">No starred items</h3>
+                    <p className="text-sm opacity-70">Star files and folders for quick access.</p>
+                </div>
             </div>
+        )
+    }
+
+    return (
+        <div className="p-6 space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                    <Star className="w-5 h-5 text-primary fill-primary" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Starred</h1>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Favorites</p>
+                </div>
+            </div>
+
+            {items.folders.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground border-b border-border/40 pb-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        FOLDERS
+                    </div>
+                    <FolderList
+                        folders={items.folders}
+                        onFolderClick={(folder) => router.push(`/dashboard?folderId=${folder.id}`)}
+                        onRefresh={loadStarred}
+                    />
+                </div>
+            )}
+
+            {items.files.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground border-b border-border/40 pb-2">
+                        <LayoutGrid className="w-4 h-4" />
+                        FILES
+                    </div>
+                    <FileList
+                        files={items.files}
+                        onRefresh={loadStarred}
+                    />
+                </div>
+            )}
         </div>
     )
 }
