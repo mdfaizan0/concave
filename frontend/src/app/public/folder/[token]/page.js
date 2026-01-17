@@ -106,7 +106,7 @@ export default function PublicFolderPage() {
 
     return (
         <div className="min-h-screen bg-background flex flex-col p-4 md:p-8 relative">
-            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px] pointer-events-none" />
+            <div className="absolute inset-0 bg-grid-white/[0.02] bg-size-[60px_60px] pointer-events-none" />
 
             <div className="max-w-5xl mx-auto w-full z-10 flex flex-col h-full gap-6">
 

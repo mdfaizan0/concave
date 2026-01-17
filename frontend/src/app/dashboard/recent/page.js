@@ -38,8 +38,8 @@ export default function RecentPage() {
     if (files.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground gap-4">
-                <div className="bg-blue-500/10 p-6 rounded-full">
-                    <Clock className="w-10 h-10 text-blue-500" />
+                <div className="bg-purple-500/10 p-6 rounded-full">
+                    <Clock className="w-10 h-10 text-purple-500" />
                 </div>
                 <div className="text-center">
                     <h3 className="text-lg font-semibold">No recent files</h3>
@@ -52,8 +52,8 @@ export default function RecentPage() {
     return (
         <div className="p-6 space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-500/10 rounded-xl">
-                    <Clock className="w-5 h-5 text-blue-500" />
+                <div className="p-2 bg-purple-500/10 rounded-xl">
+                    <Clock className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Recent</h1>
