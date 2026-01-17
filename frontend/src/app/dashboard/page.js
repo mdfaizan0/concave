@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    setFolders([]) // Clear stale data to prevent flicker
+    setFolders([])
     setFiles([])
     try {
       if (folderId) {
@@ -95,7 +95,7 @@ export default function DashboardPage() {
     if (!authLoading && user) {
       loadData()
     }
-  }, [user, authLoading, loadData])
+  }, [user?.id, authLoading, loadData])
 
   useEffect(() => {
     const handleUploadSuccess = (e) => {

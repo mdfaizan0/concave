@@ -36,6 +36,7 @@ import { toast } from "sonner"
 import { MoveSelectorDialog } from "./MoveSelectorDialog"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
+import { ShareDialog } from "../share/ShareDialog"
 import {
     ContextMenu,
     ContextMenuContent,
@@ -44,12 +45,14 @@ import {
     ContextMenuSeparator,
 } from "@/components/ui/context-menu"
 import * as permissions from "@/utils/permissions"
+import { downloadHandler } from "@/utils/downloadHandler"
 
 export function FileActions({ file, onActionComplete, children }) {
     const { user } = useAuth()
     const [renameOpen, setRenameOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
+    const [shareOpen, setShareOpen] = useState(false)
     const [newName, setNewName] = useState(file.name)
     const [loading, setLoading] = useState(false)
     const [isStarred, setIsStarred] = useState(file.is_starred || false)
@@ -73,20 +76,17 @@ export function FileActions({ file, onActionComplete, children }) {
 
     const handleShare = (e) => {
         if (e) e.stopPropagation();
-        toast.info("Sharing feature coming soon")
+        setShareOpen(true);
     }
 
     const handleDownload = async (e) => {
         if (e) e.stopPropagation();
         try {
-            const url = await fetchOneFile(file.id);
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", file.name);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast.success("Download started");
+            const res = await fetchOneFile(file.id)
+            const error = await downloadHandler(res);
+            if (error) {
+                toast.error(error.message || "Download failed");
+            }
         } catch (error) {
             toast.error(error.message || "Download failed");
         }
@@ -235,6 +235,13 @@ export function FileActions({ file, onActionComplete, children }) {
             <ContextMenuContent className="w-64 p-1.5 rounded-2xl shadow-2xl border-border/60 bg-background/95 backdrop-blur-xl">
                 {menuItems("context")}
             </ContextMenuContent>
+
+            <ShareDialog
+                open={shareOpen}
+                onOpenChange={setShareOpen}
+                resource={file}
+                resourceType="file"
+            />
 
             <MoveSelectorDialog
                 open={moveOpen}

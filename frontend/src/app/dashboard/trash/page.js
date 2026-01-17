@@ -23,7 +23,6 @@ export default function TrashPage() {
 
     const loadTrash = useCallback(async () => {
         setLoading(true)
-        setItems({ files: [], folders: [] }) // Clear stale items
         try {
             const data = await fetchTrash()
             setItems(data)
@@ -38,7 +37,7 @@ export default function TrashPage() {
         if (!authLoading && user) {
             loadTrash()
         }
-    }, [user, authLoading, loadTrash])
+    }, [user?.id, authLoading, loadTrash])
 
     const isEmpty = items.files.length === 0 && items.folders.length === 0
 

@@ -1,14 +1,15 @@
 import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import { supabase } from "../lib/supabase.js";
+import { resolveAccess } from "../utils/permissions.js";
 
 export async function createPublicLink(req, res) {
-    const { resource_id, expires_at, password } = req.body
+    const { resource_id, resource_type = "file", expires_at, password } = req.body
 
     try {
         const access = await resolveAccess({
             userId: req.user.id,
-            resourceType: "file",
+            resourceType: resource_type,
             resourceId: resource_id,
             requireEdit: true
         })
@@ -25,12 +26,13 @@ export async function createPublicLink(req, res) {
         const { data: link, error } = await supabase
             .from("public_links")
             .insert({
-                resource_type: "file",
+                resource_type,
                 resource_id,
                 token,
                 expires_at: expires_at || null,
                 password_hash
             })
+            .select("*")
             .single()
 
         if (error || !link) {
@@ -71,29 +73,94 @@ export async function accessPublicLink(req, res) {
             }
         }
 
-        const { data: file } = await supabase
-            .from("files")
-            .select("storage_path, name")
-            .eq("id", link.resource_id)
-            .eq("is_deleted", false)
-            .single()
+        let resourceData = {};
 
-        if (!file) {
-            return res.status(404).json({success: false, message: "File not found"})
+        if (link.resource_type === "file") {
+            const { data: file } = await supabase
+                .from("files")
+                .select("storage_path, name")
+                .eq("id", link.resource_id)
+                .eq("is_deleted", false)
+                .single()
+
+            if (!file) {
+                return res.status(404).json({ success: false, message: "File not found" })
+            }
+
+            const { data: signed, error: signError } = await supabase.storage
+                .from("drive")
+                .createSignedUrl(file.storage_path, 60, {
+                    download: true
+                })
+
+            if (signError) {
+                console.error("Error creating signed URL:", signError)
+                return res.status(500).json({ success: false, message: "Error creating signed URL", code: signError.code })
+            }
+            resourceData = { type: "file", name: file.name, url: signed.signedUrl };
+
+        } else if (link.resource_type === "folder") {
+            const { data: folder } = await supabase
+                .from("folders")
+                .select("id, name")
+                .eq("id", link.resource_id)
+                .single()
+
+            if (!folder) {
+                return res.status(404).json({ success: false, message: "Folder not found" })
+            }
+
+            // Fetch children for viewer
+            const { data: files } = await supabase.from("files").select("*").eq("folder_id", folder.id).eq("is_deleted", false);
+            const { data: folders } = await supabase.from("folders").select("*").eq("parent_id", folder.id);
+
+            // Generate signed URLs for all files
+            let filesWithUrls = [];
+            if (files && files.length > 0) {
+                const { data: signedUrls, error: signedError } = await supabase.storage
+                    .from("drive")
+                    .createSignedUrls(files.map(f => f.storage_path), 60 * 60); // 1 hour expiry
+
+                if (!signedError && signedUrls) {
+                    filesWithUrls = files.map((f, index) => ({
+                        ...f,
+                        url: signedUrls[index].signedUrl
+                    }));
+                } else {
+                    console.error("Error signing URLs for folder:", signedError);
+                    filesWithUrls = files;
+                }
+            } else {
+                filesWithUrls = [];
+            }
+
+            resourceData = { type: "folder", name: folder.name, children: { files: filesWithUrls, folders: folders || [] } };
         }
 
-        const {data: signed, error:signError} = await supabase.storage
-            .from("drive")
-            .createSignedUrl(file.storage_path, 60)
-
-        if (signError) {
-            console.error("Error creating signed URL:", signError)
-            return res.status(500).json({success: false, message: "Error creating signed URL", code: signError.code})
-        }
-
-        return res.status(200).json({success: true, url: signed.signedUrl, name: file.name})
+        return res.status(200).json({ success: true, ...resourceData })
     } catch (error) {
         console.error("Unexpected error accessing public link:", error)
-        return res.status(500).json({success: false, message: "Unexpected error accessing public link"})
+        return res.status(500).json({ success: false, message: "Unexpected error accessing public link" })
+    }
+}
+
+export async function deletePublicLink(req, res) {
+    const { token } = req.params
+
+    try {
+        const { error } = await supabase
+            .from("public_links")
+            .delete()
+            .eq("token", token)
+
+        if (error) {
+            console.error("Error deleting public link:", error)
+            return res.status(500).json({ success: false, message: "Error deleting public link" })
+        }
+
+        return res.status(200).json({ success: true })
+    } catch (error) {
+        console.error("Unexpected error deleting public link:", error)
+        return res.status(500).json({ success: false, message: "Unexpected error deleting public link" })
     }
 }

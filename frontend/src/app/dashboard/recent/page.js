@@ -22,7 +22,6 @@ export default function RecentPage() {
 
     const loadRecent = useCallback(async () => {
         setLoading(true)
-        setFiles([]) // Clear stale items
         try {
             const data = await fetchRecent()
             setFiles(data)
@@ -37,7 +36,7 @@ export default function RecentPage() {
         if (!authLoading && user) {
             loadRecent()
         }
-    }, [user, authLoading, loadRecent])
+    }, [user?.id, authLoading, loadRecent])
 
     useEffect(() => {
         const handleUploadSuccess = () => {

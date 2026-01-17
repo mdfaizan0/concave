@@ -36,6 +36,7 @@ import { toast } from "sonner"
 import { MoveSelectorDialog } from "../files/MoveSelectorDialog"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
+import { ShareDialog } from "../share/ShareDialog"
 import {
     ContextMenu,
     ContextMenuContent,
@@ -50,6 +51,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
     const [renameOpen, setRenameOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
+    const [shareOpen, setShareOpen] = useState(false)
     const [newName, setNewName] = useState(folder.name)
     const [loading, setLoading] = useState(false)
     const [isStarred, setIsStarred] = useState(folder.is_starred || false)
@@ -73,7 +75,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
 
     const handleShare = (e) => {
         if (e) e.stopPropagation();
-        toast.info("Sharing feature coming soon")
+        setShareOpen(true);
     }
 
     const handleRename = async (e) => {
@@ -211,6 +213,13 @@ export function FolderActions({ folder, onActionComplete, children }) {
             <ContextMenuContent className="w-64 p-1.5 rounded-2xl shadow-2xl border-border/60 bg-background/95 backdrop-blur-xl">
                 {menuItems("context")}
             </ContextMenuContent>
+
+            <ShareDialog
+                open={shareOpen}
+                onOpenChange={setShareOpen}
+                resource={folder}
+                resourceType="folder"
+            />
 
             <MoveSelectorDialog
                 open={moveOpen}

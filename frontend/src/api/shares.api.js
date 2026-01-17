@@ -1,7 +1,7 @@
 import apiClient from "./client"
 
-export async function createShare({ resource_type, resource_id, user_id, role }) {
-    const { data } = await apiClient.post("/shares", { resource_type, resource_id, user_id, role })
+export async function createShare({ resource_type, resource_id, email, role }) {
+    const { data } = await apiClient.post("/shares", { resource_type, resource_id, email, role })
     if (!data.success) throw new Error(data.message || "Failed to share resource")
     return data.share
 }
