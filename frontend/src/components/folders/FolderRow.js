@@ -14,7 +14,15 @@ export function FolderRow({ folder, onClick, onActionComplete }) {
         <FolderActions folder={folder} onActionComplete={onActionComplete}>
             <div
                 onClick={() => onClick(folder.id)}
-                className="group relative flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 cursor-pointer transition-all duration-200 border border-border/10 hover:border-border/60 hover:shadow-sm"
+                className="group relative flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 cursor-pointer transition-all duration-200 border border-border/10 hover:border-border/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        onClick(folder.id)
+                    }
+                }}
             >
                 <div className="relative p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
                     <Folder className="h-6 w-6 text-primary fill-primary/30 group-hover:fill-primary/40" />

@@ -13,8 +13,16 @@ export function SearchInput() {
     const [results, setResults] = useState({ files: [], folders: [] })
     const [loading, setLoading] = useState(false)
     const [open, setOpen] = useState(false)
+    const [selectedIndex, setSelectedIndex] = useState(-1)
     const containerRef = useRef(null)
+    const inputRef = useRef(null)
     const router = useRouter()
+
+    const flattenedResults = [
+        ...results.folders.map(f => ({ ...f, type: "folder" })),
+        ...results.files.map(f => ({ ...f, type: "file" })),
+        { type: "view_all", id: "view_all" }
+    ]
 
     // Assuming we don't have a useDebounce hook yet, implementing simple effect
     useEffect(() => {
@@ -27,8 +35,37 @@ export function SearchInput() {
             }
         }, 300)
 
+        // Reset index on query change
+        setSelectedIndex(-1)
+
         return () => clearTimeout(timer)
     }, [query])
+
+    const handleKeyDown = (e) => {
+        if (!open) return
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault()
+            setSelectedIndex(prev => (prev < flattenedResults.length - 1 ? prev + 1 : prev))
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault()
+            setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev))
+        } else if (e.key === "Enter" && selectedIndex > -1) {
+            e.preventDefault()
+            const item = flattenedResults[selectedIndex]
+            if (item) {
+                if (item.type === "view_all") {
+                    router.push(`/dashboard/search?q=${encodeURIComponent(query)}`)
+                    setOpen(false)
+                } else {
+                    handleSelect(item.type, item.id)
+                }
+            }
+        } else if (e.key === "Escape") {
+            setOpen(false)
+            inputRef.current?.blur()
+        }
+    }
 
     const performSearch = async (searchTerm) => {
         setLoading(true)
@@ -60,28 +97,10 @@ export function SearchInput() {
         if (type === "folder") {
             router.push(`/dashboard?folderId=${id}`)
         } else {
-            // For files, we might want to just let the user see it in its folder or open a preview
-            // But currently our file routing is a bit different. 
-            // Phase 8 specs said "Search results view". 
-            // For quick access, let's just go to the file location if possible or...
-            // Actually, simply navigating to a "search results" page might be cleaner if we want a full view.
-            // But the prompt asked for "Global search results view". 
-            // If I am making a dropdown, that's "Top bar" style.
-
-            // Let's implement navigation to folder for now for files? 
-            // Or better, let's make this a "Quick Search" dropdown.
-            // Requirement 1 says: "Global search results view"
-            // "Add a search input... Render results using existing FileList / FolderList components"
-            // This suggests a PAGE or a big overlay. 
-            // Let's try redirecting to `/dashboard/search?q=...` if Enter is pressed?
-            // But for now, let's stick to this dropdown for quick access, and maybe a "See all" 
-            // wait, strict rule: "Render results using existing FileList / FolderList components"
-            // A dropdown might be too small for `FileList`.
-
-            // Re-evaluating: Maybe the Search Input should just redirect to `/dashboard/search` on submit?
-            // Or maybe it shows a full-width overlay?
-            // "Add a search input (Topbar or dedicated area)... Render results using existing..."
-            // I'll stick with a dropdown for *suggestions* but maybe full search on Enter.
+            // Navigate to folder containing the file?
+            // For now, let's keep the current behavior of using the dropdown or View All.
+            router.push(`/dashboard/search?q=${encodeURIComponent(query)}`)
+            setOpen(false)
         }
     }
 
@@ -93,9 +112,11 @@ export function SearchInput() {
                     type="search"
                     placeholder="Search files and folders..."
                     className="w-full bg-background pl-9 md:w-[300px] lg:w-[400px]"
+                    ref={inputRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => { if (query) setOpen(true) }}
+                    onKeyDown={handleKeyDown}
                 />
                 {loading && (
                     <div className="absolute right-2.5 top-2.5">
@@ -109,10 +130,13 @@ export function SearchInput() {
                     {results.folders.length > 0 && (
                         <div className="mb-2">
                             <h4 className="mb-1 px-2 text-xs font-semibold text-muted-foreground">Folders</h4>
-                            {results.folders.slice(0, 5).map(folder => (
+                            {results.folders.slice(0, 5).map((folder, idx) => (
                                 <div
                                     key={folder.id}
-                                    className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                        selectedIndex === idx && "bg-accent text-accent-foreground"
+                                    )}
                                     onClick={() => handleSelect("folder", folder.id)}
                                 >
                                     <Folder className="h-4 w-4 text-blue-500" />
@@ -124,27 +148,32 @@ export function SearchInput() {
                     {results.files.length > 0 && (
                         <div className="mb-2">
                             <h4 className="mb-1 px-2 text-xs font-semibold text-muted-foreground">Files</h4>
-                            {results.files.slice(0, 5).map(file => (
-                                <div
-                                    key={file.id}
-                                    className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                                    onClick={() => {
-                                        // If file has a folder, go there? Or just preview?
-                                        // For now, let's just close. 
-                                        // We need a proper plan for file selection. 
-                                        // Maybe we should just use the proper Search Page.
-                                        router.push(`/dashboard/search?q=${encodeURIComponent(query)}`)
-                                        setOpen(false)
-                                    }}
-                                >
-                                    <File className="h-4 w-4 text-gray-500" />
-                                    <span className="truncate">{file.name}</span>
-                                </div>
-                            ))}
+                            {results.files.slice(0, 5).map((file, idx) => {
+                                const globalIndex = results.folders.length + idx
+                                return (
+                                    <div
+                                        key={file.id}
+                                        className={cn(
+                                            "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                            selectedIndex === globalIndex && "bg-accent text-accent-foreground"
+                                        )}
+                                        onClick={() => {
+                                            router.push(`/dashboard/search?q=${encodeURIComponent(query)}`)
+                                            setOpen(false)
+                                        }}
+                                    >
+                                        <File className="h-4 w-4 text-gray-500" />
+                                        <span className="truncate">{file.name}</span>
+                                    </div>
+                                )
+                            })}
                         </div>
                     )}
                     <div
-                        className="border-t pt-1 mt-1 px-2 py-1.5 text-xs text-center text-muted-foreground hover:text-primary cursor-pointer hover:underline"
+                        className={cn(
+                            "border-t pt-1 mt-1 px-2 py-1.5 text-xs text-center text-muted-foreground hover:text-primary cursor-pointer hover:underline",
+                            selectedIndex === flattenedResults.length - 1 && "text-primary underline"
+                        )}
                         onClick={() => {
                             router.push(`/dashboard/search?q=${encodeURIComponent(query)}`)
                             setOpen(false)

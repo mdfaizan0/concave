@@ -7,10 +7,27 @@ import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/search/SearchInput"
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
+import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog"
 
 export function Topbar() {
     const { session, signOut } = useAuth()
     const router = useRouter()
+    const [showShortcuts, setShowShortcuts] = React.useState(false)
+
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                document.querySelector("input[type='search']")?.focus()
+            }
+            if (e.key === "?" && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+                e.preventDefault()
+                setShowShortcuts(true)
+            }
+        }
+        document.addEventListener("keydown", handleKeyDown)
+        return () => document.removeEventListener("keydown", handleKeyDown)
+    }, [])
 
     const handleSignOut = async () => {
         if (session) {
@@ -26,7 +43,13 @@ export function Topbar() {
                 <SearchInput />
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Help">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Help / Shortcuts (?)"
+                    onClick={() => setShowShortcuts(true)}
+                >
                     <HelpCircle className="h-5 w-5" />
                 </Button>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Notifications">
@@ -45,6 +68,7 @@ export function Topbar() {
                     <LogOut className="h-5 w-5" />
                 </Button>
             </div>
+            <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
         </div>
     )
 }

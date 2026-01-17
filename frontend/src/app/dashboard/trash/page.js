@@ -41,8 +41,8 @@ export default function TrashPage() {
     if (items.files.length === 0 && items.folders.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground gap-4">
-                <div className="bg-primary/10 p-6 rounded-full">
-                    <Trash2 className="w-10 h-10 text-primary" />
+                <div className="bg-red-500/10 p-6 rounded-full">
+                    <Trash2 className="w-10 h-10 text-red-500" />
                 </div>
                 <div className="text-center">
                     <h3 className="text-lg font-semibold">Trash is empty</h3>
@@ -55,8 +55,8 @@ export default function TrashPage() {
     return (
         <div className="p-6 space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-primary/10 rounded-xl">
-                    <Trash2 className="w-5 h-5 text-primary fill-primary" />
+                <div className="p-2 bg-red-500/10 rounded-xl">
+                    <Trash2 className="w-5 h-5 text-red-500 fill-red-500" />
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Trash</h1>

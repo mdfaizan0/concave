@@ -117,18 +117,18 @@ export default function PublicFilePage() {
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
             {/* Background elements */}
-            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" />
+            <div className="absolute inset-0 bg-grid-white/[0.02] bg-size-[60px_60px]" />
+            <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-background via-background/80 to-transparent" />
 
             <div className="relative z-10 w-full max-w-lg bg-card border border-border/50 shadow-2xl rounded-3xl p-8 md:p-12 text-center space-y-8">
 
                 <div className="space-y-6">
-                    <div className="mx-auto w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center shadow-inner border border-primary/20">
+                    <div className="mx-auto w-20 h-20 bg-primary/10 rounded-4xl flex items-center justify-center shadow-inner border border-primary/20">
                         <FileText className="w-10 h-10 text-primary" />
                     </div>
 
                     <div className="space-y-2">
-                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground break-words">
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground wrap-break-word">
                             {fileData.name}
                         </h1>
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest flex items-center justify-center gap-2">

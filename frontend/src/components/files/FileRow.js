@@ -48,7 +48,15 @@ export function FileRow({ file, onActionComplete }) {
             <div
                 onDoubleClick={handleDownload}
                 title="Double click to download"
-                className="group relative flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm"
+                className="group relative flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/40 cursor-pointer transition-all duration-200 border border-border/5 hover:border-border/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        handleDownload()
+                    }
+                }}
             >
                 <div className="relative p-2.5 bg-background border border-border/10 rounded-xl group-hover:border-border/40 transition-colors">
                     {getFileIcon(file.mime_type)}
