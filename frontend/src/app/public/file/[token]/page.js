@@ -49,10 +49,10 @@ export default function PublicFilePage() {
         try {
             const error = await downloadHandler(fileData.url, fileData.name);
             if (error) {
-                toast.error(error.message || "Download failed");
+                toast.error(error.response?.data?.message || error.message || "Download failed");
             }
         } catch (error) {
-            toast.error(error.message || "Download failed");
+            toast.error(error.response?.data?.message || error.message || "Download failed");
         }
     }
 

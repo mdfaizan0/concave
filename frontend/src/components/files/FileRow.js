@@ -35,7 +35,7 @@ export function FileRow({ file, onActionComplete }) {
             document.body.removeChild(link);
             toast.success("Download started");
         } catch (error) {
-            toast.error(error.message || "Download failed");
+            toast.error(error.response?.data?.message || error.message || "Download failed");
         }
     }
 

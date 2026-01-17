@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Share2, Users, Globe, UserPlus, Shield, X, AlertCircle } from "lucide-react";
-import { createShare, listShares, revokeShare } from "@/api/shares.api";
+import { createShare, listShares, revokeShare, updateShareRole } from "@/api/shares.api";
 import { ShareUserRow } from "./ShareUserRow";
 import { PublicLinkSection } from "./PublicLinkSection";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +34,7 @@ export function ShareDialog({ open, onOpenChange, resource, resourceType }) {
             const data = await listShares(resourceType, resource.id);
             setShares(data || []);
         } catch (error) {
-            toast.error("Failed to load collaborators");
+            toast.error(error.response?.data?.message || error.message || "Failed to load collaborators");
         } finally {
             setLoading(false);
         }
@@ -62,15 +62,20 @@ export function ShareDialog({ open, onOpenChange, resource, resourceType }) {
             setEmail("");
             loadShares();
         } catch (error) {
-            toast.error(error.message || "Failed to invite user. Ensure email is registered.");
+            toast.error(error.response?.data?.message || error.message || "Failed to invite user. Ensure email is registered.");
         } finally {
             setInviting(false);
         }
     };
 
     const handleUpdateRole = async (shareId, newRole) => {
-        toast.info("Role updating coming soon in Phase 7 refinements");
-        // backend currently doesn't have an updateShare role endpoint in share.route.js
+        try {
+            await updateShareRole(shareId, newRole);
+            toast.success("Role updated");
+            loadShares();
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || "Failed to update role");
+        }
     };
 
     const handleRevokeShare = async (shareId) => {
@@ -79,7 +84,7 @@ export function ShareDialog({ open, onOpenChange, resource, resourceType }) {
             toast.success("Access revoked");
             loadShares();
         } catch (error) {
-            toast.error("Failed to revoke access");
+            toast.error(error.response?.data?.message || error.message || "Failed to revoke access");
         }
     };
 
@@ -135,6 +140,7 @@ export function ShareDialog({ open, onOpenChange, resource, resourceType }) {
                             <form onSubmit={handleAddShare} className="flex gap-2 mt-2">
                                 <div className="relative flex-1">
                                     <Input
+                                        type="email"
                                         placeholder="Enter email to invite..."
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

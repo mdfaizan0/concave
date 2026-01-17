@@ -115,12 +115,27 @@ export async function getOneFile(req, res) {
     const { id } = req.params
 
     try {
-        const { data: file, error } = await supabase
+        const access = await resolveAccess({
+            userId: req.user.id,
+            resourceType: "file",
+            resourceId: id,
+            requireEdit: true
+        });
+        
+        if (!access) {
+            return res.status(403).json({ success: false });
+        }
+
+        let query = supabase
             .from("files")
             .select("storage_path")
             .eq("id", id)
-            .eq("owner_id", req.user.id)
-            .single()
+
+        if (access.role === "owner") {
+            query = query.eq("owner_id", req.user.id)
+        }
+
+        const { data: file, error } = await query.single()
 
         if (error || !file) {
             return res.status(404).json({
@@ -170,7 +185,6 @@ export async function renameFile(req, res) {
             resourceId: id,
             requireEdit: true
         });
-
         if (!access) {
             return res.status(403).json({ success: false });
         }
@@ -179,12 +193,17 @@ export async function renameFile(req, res) {
         if (name) updateData.name = name.trim();
         if (folder_id !== undefined) updateData.folder_id = folder_id;
 
-        const { data, error } = await supabase
+        let query = supabase
             .from("files")
             .update(updateData)
-            .eq("owner_id", req.user.id)
             .eq("id", id)
             .eq("is_deleted", false)
+
+        if (access.role === "owner") {
+            query = query.eq("owner_id", req.user.id)
+        }
+
+        const { data, error } = await query
             .select()
             .single()
 

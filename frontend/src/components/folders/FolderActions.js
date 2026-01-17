@@ -29,9 +29,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { MoreVertical, Pencil, Trash2, FolderInput, Share2, Star } from "lucide-react"
+import { MoreVertical, Pencil, Trash2, FolderInput, Share2, Star, UserMinus } from "lucide-react"
 import { renameFolder, trashFolder } from "@/api/folders.api"
 import { starResource, unstarResource } from "@/api/stars.api"
+import { leaveShare } from "@/api/shares.api"
 import { toast } from "sonner"
 import { MoveSelectorDialog } from "../files/MoveSelectorDialog"
 import { cn } from "@/lib/utils"
@@ -52,6 +53,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
     const [shareOpen, setShareOpen] = useState(false)
+    const [leaveShareOpen, setLeaveShareOpen] = useState(false)
     const [newName, setNewName] = useState(folder.name)
     const [loading, setLoading] = useState(false)
     const [isStarred, setIsStarred] = useState(folder.is_starred || false)
@@ -69,13 +71,27 @@ export function FolderActions({ folder, onActionComplete, children }) {
             setIsStarred(!isStarred)
             onActionComplete?.()
         } catch (error) {
-            toast.error(error.message || "Failed to update star")
+            toast.error(error.response?.data?.message || error.message || "Failed to update star")
         }
     }
 
     const handleShare = (e) => {
         if (e) e.stopPropagation();
         setShareOpen(true);
+    }
+
+    const handleLeaveShare = async () => {
+        setLoading(true)
+        try {
+            await leaveShare(folder.share_id)
+            toast.success("Removed from shared")
+            setLeaveShareOpen(false)
+            onActionComplete()
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || "Failed to remove")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleRename = async (e) => {
@@ -92,7 +108,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
             setRenameOpen(false)
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to rename")
+            toast.error(error.response?.data?.message || error.message || "Failed to rename")
         } finally {
             setLoading(false)
         }
@@ -105,7 +121,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
             toast.success("Folder moved")
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to move")
+            toast.error(error.response?.data?.message || error.message || "Failed to move")
         } finally {
             setLoading(false)
         }
@@ -119,7 +135,7 @@ export function FolderActions({ folder, onActionComplete, children }) {
             setDeleteOpen(false)
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to delete")
+            toast.error(error.response?.data?.message || error.message || "Failed to delete")
         } finally {
             setLoading(false)
         }
@@ -134,6 +150,9 @@ export function FolderActions({ folder, onActionComplete, children }) {
         const canDelete = permissions.canDelete(folder, user?.id)
         const canShare = permissions.canShare(folder, user?.id)
         const canStar = permissions.canStar(folder, user?.id)
+
+        // Show "Remove from Shared" if user is NOT owner but has a role
+        const isSharedWithMe = folder.role && folder.role !== "owner" && folder.share_id;
 
         return (
             <>
@@ -159,6 +178,16 @@ export function FolderActions({ folder, onActionComplete, children }) {
                     <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
                         <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
                         <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
+                    </Item>
+                )}
+                {/* Remove from Shared Action */}
+                {isSharedWithMe && (
+                    <Item
+                        onClick={(e) => { e.stopPropagation(); setLeaveShareOpen(true); }}
+                        className="gap-2 text-muted-foreground focus:text-destructive focus:bg-destructive/10"
+                    >
+                        <UserMinus className="h-4 w-4" />
+                        Remove from Shared
                     </Item>
                 )}
                 {canDelete && (
@@ -229,6 +258,29 @@ export function FolderActions({ folder, onActionComplete, children }) {
                 itemType="folder"
                 itemId={folder.id}
             />
+
+            {/* Leave Share Alert Dialog */}
+            <AlertDialog open={leaveShareOpen} onOpenChange={setLeaveShareOpen}>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove from Shared?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This folder will be removed from your "Shared with Me" list.
+                            You won't be able to access it again unless it's shared with you again.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setLeaveShareOpen(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleLeaveShare}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            disabled={loading}
+                        >
+                            {loading ? "Removing..." : "Remove"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Rename Dialog */}
             <Dialog open={renameOpen} onOpenChange={setRenameOpen}>

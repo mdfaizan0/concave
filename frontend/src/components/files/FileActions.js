@@ -29,9 +29,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { MoreVertical, Pencil, Trash2, Download, FolderInput, Share2, Star } from "lucide-react"
+import { MoreVertical, Pencil, Trash2, Download, FolderInput, Share2, Star, UserMinus } from "lucide-react"
 import { renameFile, trashFile, fetchOneFile } from "@/api/files.api"
 import { starResource, unstarResource } from "@/api/stars.api"
+import { leaveShare } from "@/api/shares.api"
 import { toast } from "sonner"
 import { MoveSelectorDialog } from "./MoveSelectorDialog"
 import { cn } from "@/lib/utils"
@@ -53,6 +54,7 @@ export function FileActions({ file, onActionComplete, children }) {
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [moveOpen, setMoveOpen] = useState(false)
     const [shareOpen, setShareOpen] = useState(false)
+    const [leaveShareOpen, setLeaveShareOpen] = useState(false)
     const [newName, setNewName] = useState(file.name)
     const [loading, setLoading] = useState(false)
     const [isStarred, setIsStarred] = useState(file.is_starred || false)
@@ -70,7 +72,7 @@ export function FileActions({ file, onActionComplete, children }) {
             setIsStarred(!isStarred)
             onActionComplete?.()
         } catch (error) {
-            toast.error(error.message || "Failed to update star")
+            toast.error(error.response?.data?.message || error.message || "Failed to update star")
         }
     }
 
@@ -79,16 +81,30 @@ export function FileActions({ file, onActionComplete, children }) {
         setShareOpen(true);
     }
 
+    const handleLeaveShare = async () => {
+        setLoading(true)
+        try {
+            await leaveShare(file.share_id)
+            toast.success("Removed from shared")
+            setLeaveShareOpen(false)
+            onActionComplete()
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || "Failed to remove")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleDownload = async (e) => {
         if (e) e.stopPropagation();
         try {
             const res = await fetchOneFile(file.id)
             const error = await downloadHandler(res);
             if (error) {
-                toast.error(error.message || "Download failed");
+                toast.error(error.response?.data?.message || error.message || "Download failed");
             }
         } catch (error) {
-            toast.error(error.message || "Download failed");
+            toast.error(error.response?.data?.message || error.message || "Download failed");
         }
     }
 
@@ -106,7 +122,7 @@ export function FileActions({ file, onActionComplete, children }) {
             setRenameOpen(false)
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to rename")
+            toast.error(error.response?.data?.message || error.message || "Failed to rename")
         } finally {
             setLoading(false)
         }
@@ -119,7 +135,7 @@ export function FileActions({ file, onActionComplete, children }) {
             toast.success("File moved")
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to move")
+            toast.error(error.response?.data?.message || error.message || "Failed to move")
         } finally {
             setLoading(false)
         }
@@ -133,7 +149,7 @@ export function FileActions({ file, onActionComplete, children }) {
             setDeleteOpen(false)
             onActionComplete()
         } catch (error) {
-            toast.error(error.message || "Failed to delete")
+            toast.error(error.response?.data?.message || error.message || "Failed to delete")
         } finally {
             setLoading(false)
         }
@@ -149,6 +165,9 @@ export function FileActions({ file, onActionComplete, children }) {
         const canShare = permissions.canShare(file, user?.id)
         const canStar = permissions.canStar(file, user?.id)
         const canDownload = permissions.canDownload(file, user?.id)
+
+        // Show "Remove from Shared" if user is NOT owner but has a role (meaning it's shared)
+        const isSharedWithMe = file.role && file.role !== "owner" && file.share_id;
 
         return (
             <>
@@ -175,6 +194,16 @@ export function FileActions({ file, onActionComplete, children }) {
                     <Item onClick={handleStar} className="gap-2 text-primary focus:text-primary focus:bg-primary/10 transition-colors">
                         <Star className={cn("h-4 w-4 transition-transform active:scale-95", isStarred && "fill-primary")} />
                         <span className="flex-1 font-semibold">{isStarred ? "Unstar" : "Star"}</span>
+                    </Item>
+                )}
+                {/* Remove from Shared Action */}
+                {isSharedWithMe && (
+                    <Item
+                        onClick={(e) => { e.stopPropagation(); setLeaveShareOpen(true); }}
+                        className="gap-2 text-muted-foreground focus:text-destructive focus:bg-destructive/10"
+                    >
+                        <UserMinus className="h-4 w-4" />
+                        Remove from Shared
                     </Item>
                 )}
                 {canMove && (
@@ -251,6 +280,29 @@ export function FileActions({ file, onActionComplete, children }) {
                 itemType="file"
                 itemId={file.id}
             />
+
+            {/* Leave Share Alert Dialog */}
+            <AlertDialog open={leaveShareOpen} onOpenChange={setLeaveShareOpen}>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove from Shared?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This file will be removed from your "Shared with Me" list.
+                            You won't be able to access it again unless it's shared with you again.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setLeaveShareOpen(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleLeaveShare}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            disabled={loading}
+                        >
+                            {loading ? "Removing..." : "Remove"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Rename Dialog */}
             <Dialog open={renameOpen} onOpenChange={setRenameOpen}>

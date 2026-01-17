@@ -21,7 +21,7 @@ export function PublicLinkSection({ resourceId, resourceType }) {
             setLinkData(linkData)
             toast.success("Public link generated")
         } catch (error) {
-            toast.error(error.message || "Failed to create public link")
+            toast.error(error.response?.data?.message || error.message || "Failed to create public link")
         } finally {
             setLoading(false)
         }
@@ -42,7 +42,7 @@ export function PublicLinkSection({ resourceId, resourceType }) {
             setPublicLink(null)
             toast.success("Public link revoked")
         } catch (error) {
-            toast.error(error.message || "Failed to revoke public link")
+            toast.error(error.response?.data?.message || error.message || "Failed to revoke public link")
         } finally {
             setLoading(false)
         }

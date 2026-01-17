@@ -17,3 +17,21 @@ export async function revokeShare(id) {
     if (!data.success) throw new Error(data.message || "Failed to revoke share")
     return data
 }
+
+export async function fetchSharedWithMe() {
+    const { data } = await apiClient.get("/shares/me");
+    if (!data.success) throw new Error(data.message || "Failed to fetch shared items");
+    return data;
+}
+
+export async function leaveShare(id) {
+    const { data } = await apiClient.delete(`/shares/leave/${id}`);
+    if (!data.success) throw new Error(data.message || "Failed to leave share");
+    return data;
+}
+
+export async function updateShareRole(id, role) {
+    const { data } = await apiClient.put(`/shares/${id}`, { role });
+    if (!data.success) throw new Error(data.message || "Failed to update role");
+    return data;
+}

@@ -19,21 +19,21 @@ export async function resolveAccess({
   if (owned) {
     return { role: "owner" };
   }
-
+  
   // 2️⃣ Shared access
   const { data: share } = await supabase
-    .from("shares")
-    .select("role")
-    .eq("resource_type", resourceType)
-    .eq("resource_id", resourceId)
-    .eq("user_id", userId)
-    .single();
-
+  .from("shares")
+  .select("role")
+  .eq("resource_type", resourceType)
+  .eq("resource_id", resourceId)
+  .eq("user_id", userId)
+  .single();
+  
   if (!share) return null;
-
+  
   if (requireEdit && share.role !== "editor") {
     return null;
   }
-
+  
   return share;
 }

@@ -26,7 +26,7 @@ export default function RecentPage() {
             const data = await fetchRecent()
             setFiles(data)
         } catch (error) {
-            toast.error(error.message || "Failed to load recent files")
+            toast.error(error.response?.data?.message || error.message || "Failed to load recent files")
         } finally {
             setLoading(false)
         }

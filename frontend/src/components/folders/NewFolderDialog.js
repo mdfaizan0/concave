@@ -40,7 +40,7 @@ export function NewFolderDialog({ parentId, onFolderCreated, open: externalOpen,
             setOpen(false)
             onFolderCreated()
         } catch (error) {
-            toast.error(error.message || "Failed to create folder")
+            toast.error(error.response?.data?.message || error.message || "Failed to create folder")
         } finally {
             setLoading(false)
         }

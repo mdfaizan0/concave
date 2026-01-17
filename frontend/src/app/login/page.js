@@ -40,7 +40,7 @@ export default function LoginPage() {
 
       router.push("/dashboard")
     } catch (error) {
-      toast.error(error.message || "Invalid email or password")
+      toast.error(error.response?.data?.message || error.message || "Invalid email or password")
     } finally {
       setLoading(false)
     }

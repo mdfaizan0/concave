@@ -78,7 +78,7 @@ export default function DashboardPage() {
         setFiles(rootFiles)
       }
     } catch (error) {
-      toast.error(error.message || "Error loading items")
+      toast.error(error.response?.data?.message || error.message || "Error loading items")
       if (folderId) router.push("/dashboard")
     } finally {
       setLoading(false)

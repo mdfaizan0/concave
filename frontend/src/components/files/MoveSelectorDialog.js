@@ -35,7 +35,7 @@ export function MoveSelectorDialog({ open, onOpenChange, onMove, currentParentId
             }
             setSelectedFolderId(parentId)
         } catch (error) {
-            toast.error("Failed to load folders")
+            toast.error(error.response?.data?.message || error.message || "Failed to load folders")
         } finally {
             setLoading(false)
         }

@@ -50,7 +50,7 @@ export function UploadProvider({ children }) {
             setUploads(prev => prev.map(u =>
                 u.id === uploadId ? { ...u, status: "error", error: error.message } : u
             ))
-            toast.error(`Failed to upload ${file.name}`)
+            toast.error(error.response?.data?.message || error.message || `Failed to upload ${file.name}`)
         }
     }, [])
 
